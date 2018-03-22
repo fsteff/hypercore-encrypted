@@ -1,0 +1,37 @@
+{
+  "name": "hypercore-encrypted",
+  "version": "0.0.1",
+  "description": "wrapper around hypercore that supports encryption (experimental!)",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard --fix && node ./tests/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fsteff/hypercore-encrypted.git"
+  },
+  "keywords": [
+    "dat",
+    "datproject",
+    "hypercore",
+    "encryption"
+  ],
+  "author": "Stefan Fixl",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fsteff/hypercore-encrypted/issues"
+  },
+  "homepage": "https://github.com/fsteff/hypercore-encrypted#readme",
+  "dependencies": {
+    "aes-js": "^3.1.0",
+    "buffer": "^5.1.0",
+    "bulk-write-stream": "^1.1.3",
+    "hypercore": "^6.12.3",
+    "inherits": "^2.0.3",
+    "randombytes": "^2.0.6",
+    "stream": "0.0.2"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
+  }
+}
