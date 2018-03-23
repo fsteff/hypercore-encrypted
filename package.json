@@ -33,5 +33,11 @@
   },
   "devDependencies": {
     "standard": "^11.0.1"
+  },
+
+  "standard": {
+    "ignore": [
+      "/node_modules/"
+    ]
   }
 }

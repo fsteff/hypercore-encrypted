@@ -1,16 +1,35 @@
 const hypercore = require('../index')
-const crypto = require('../libs/crypto')
+const CryptoBook = require('../libs/CryptoBook')
+const fs = require('fs')
 
-// TODO: remove hardcoded stuff ;-)
-const key = crypto('f001b475d5fd3a300fda25ed0ea23f67', 0)
-const core = hypercore('D:\\tmp\\hypercore-test', null, {
-  encryptionKey: key,
-  valueEncoding: 'utf-8'
-})
+const keyfile = 'D:\\tmp\\key.json'
 
-core.append('test \u20AC', () => {
-    /*core.get(0, (err, data) => {
+fs.readFile(keyfile, 'utf-8', (err, data) => {
+  if (err) data = '[]'
+  // TODO: remove hardcoded stuff ;-)
+  const book = new CryptoBook(data)
+
+  const core = hypercore('D:\\tmp\\hypercore-test', null, {
+    encryptionKeyBook: book,
+    valueEncoding: 'utf-8'
+  })
+
+  core.newEncryptionKey((err) => {
+    if (err) throw err
+    core.serializeCryptoKeyBook((err, data) => {
+      if (err) throw err
+
+      fs.writeFile(keyfile, JSON.stringify(data), 'utf-8', (err) => {
+        if (err) throw err
+      })
+    })
+  })
+  core.append('test 4 :)))', () => {
+    for (var i = 0; i < core.length; i++) {
+      core.get(i, (err, data) => {
         console.log(data)
-    })*/
+      })
+    }
+  })
+  // core.createReadStream().pipe(process.stdout).on('close', () => console.log('done'))
 })
-core.createReadStream().pipe(process.stdout).on('close', () => console.log('done'))
