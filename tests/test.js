@@ -1,8 +1,11 @@
-const hypercore = require('../index')
-const CryptoBook = require('../libs/CryptoBook')
-const fs = require('fs')
+const testNew = require('./testNew')
+const testHyperdrive = require('./testHyperdrive')
 
-const keyfile = 'D:\\tmp\\key.json'
+testNew()
+testHyperdrive()
+
+/*
+const keyfile = '/tests/keys.json'
 
 fs.readFile(keyfile, 'utf-8', (err, data) => {
   if (err) data = '[]'
@@ -36,3 +39,4 @@ fs.readFile(keyfile, 'utf-8', (err, data) => {
   })
   core.createReadStream().pipe(process.stdout)
 })
+ */

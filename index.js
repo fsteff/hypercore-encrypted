@@ -98,34 +98,39 @@ const oldGet = Feed.prototype.get
  * @param {function(error, data)} cb
  */
 Feed.prototype.get = function (index, opts, cb) {
-  if (typeof opts === 'function') return this.get(index, null, opts)
-  if (!this.opened) return this._readyAndGet(index, opts, cb)
+  const self = this
+
+  if (typeof opts === 'function') return self.get(index, null, opts)
+  if (!self.opened) return this._readyAndGet(index, opts, cb)
   if (typeof cb !== 'function') cb = throwErr
 
-  const self = this
-  if (this.cryptoKeyBook) {
-    this._ready((err) => {
+  const callback = cb
+
+  if (self.cryptoKeyBook) {
+    oldGet.call(self, index, opts, onData)
+  } else {
+    oldGet.call(self, index, opts, cb)
+  }
+
+  function onData (err, data, isCascaded) {
+    if (err) return callback(err)
+
+    // little hacky bugfix: oldGet.call may call get() with onData as callback
+    if (isCascaded) return callback(err, data, isCascaded)
+
+    self._calcOffset(index, (err, offs) => {
       if (err) return cb(err)
 
-      oldGet.call(this, index, opts, (err, data) => {
-        if (err) return cb(err)
-        this._calcOffset(index, (err, offs) => {
-          if (err) return cb(err)
-
-          data = self.cryptoKeyBook.decrypt(data, offs)
-          data = self._fromBinary(data)
-          cb(null, data)
-        })
-      })
+      data = self.cryptoKeyBook.decrypt(data, offs)
+      data = self._fromBinary(data)
+      cb(null, data, true)
     })
-  } else {
-    oldGet.call(this, index, opts, cb)
   }
 }
 
 /**
  * Decodes the data to binary
- * @param {string | object | buffer | Array} data 
+ * @param {string | object | buffer | Array} data
  */
 Feed.prototype._toBinary = function (data) {
   var arr = []
@@ -149,7 +154,7 @@ Feed.prototype._toBinary = function (data) {
 
 /**
  * Encodes the data back to the specified encoding
- * @param {Buffer} data 
+ * @param {Buffer} data
  */
 Feed.prototype._fromBinary = function (data) {
   switch (this.encoding) {
@@ -163,28 +168,28 @@ const noarr = []
 /**
  * Calculats the feed offset of a node index and calls the callback when done
  * (may need to load metadata first)
- * @param {number} index 
- * @param {function(err, offset, size)} cb 
+ * @param {number} index
+ * @param {function(err, offset, size)} cb
  */
 Feed.prototype._calcOffset = function (index, cb) {
   this._storage.dataOffset(index, noarr, cb)
 }
 
 /**
- * @param {*} arr 
+ * @param {*} arr
  * @param {number} offset
- * @returns {Uint8Array} 
+ * @returns {Buffer}
  */
 Feed.prototype._encrypt = function (arr, offset) {
   if (!Array.isArray(arr)) arr = [arr]
 
   if (this.cryptoKeyBook.entries.length === 0) {
-    this.newEncryptionKey()
+    throw new Error('CryptoBook is empty')
   }
 
   var ret = new Array(arr.length)
   for (var i = 0; i < arr.length; i++) {
-    ret[i] = this.cryptoKeyBook.encrypt(arr[i], offset)
+    ret[i] = Buffer.from(this.cryptoKeyBook.encrypt(arr[i], offset))
     offset += arr[i].length
   }
   this._byteLengthOffset += offset

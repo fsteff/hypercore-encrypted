@@ -35,7 +35,7 @@ function CryptoBook (init) {
 /**
  * Add a key to the book
  * @param {number} index offset
- * @param {CryptoKey} cryptoKey 
+ * @param {CryptoKey} cryptoKey
  */
 CryptoBook.prototype.add = function (index, cryptoKey) {
   if (typeof index !== 'number') {
@@ -50,7 +50,7 @@ CryptoBook.prototype.add = function (index, cryptoKey) {
 
 /**
  * Generates a new key and adds it to the book
- * @param {number} offset 
+ * @param {number} offset
  */
 CryptoBook.prototype.generateNewKey = function (offset) {
   var cryptoKey = new CryptoKey()
@@ -59,7 +59,7 @@ CryptoBook.prototype.generateNewKey = function (offset) {
 
 /**
  * Get key for offset [index]
- * @param {number} index 
+ * @param {number} index
  * @returns {{index, cryptoKey}}
  */
 CryptoBook.prototype.get = function (index) {
@@ -75,8 +75,8 @@ CryptoBook.prototype.serialize = function () {
 }
 
 /**
- * @param {Buffer | Array} data 
- * @param {number} offset 
+ * @param {Buffer | Array} data
+ * @param {number} offset
  * @return {Uint8Array}
  */
 CryptoBook.prototype.encrypt = function (data, offset) {
@@ -86,12 +86,13 @@ CryptoBook.prototype.encrypt = function (data, offset) {
 }
 
 /**
- * @param {Buffer | Array} data 
- * @param {number} offset 
+ * @param {Buffer | Array} data
+ * @param {number} offset
  * @return {Uint8Array}
  */
 CryptoBook.prototype.decrypt = function (data, offset) {
   offset = (typeof offset === 'number') ? offset : 0
   var key = this.get(offset)
+  // data = (data instanceof Uint8Array) ? data : new Uint8Array(data)
   return key.cryptoKey.decrypt(data, offset)
 }

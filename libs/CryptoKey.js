@@ -6,8 +6,8 @@ module.exports = CryptoKey
 /**
  * Stores an AES-128 key
  * Encryption/decryption in CTR mode
- * 
- * @param {string | Buffer} nonce (optional, is generated if undefined or null) 
+ *
+ * @param {string | Buffer} nonce (optional, is generated if undefined or null)
  * @param {number} iv (optional) usually 0
  */
 function CryptoKey (nonce, iv) {
@@ -26,8 +26,8 @@ function CryptoKey (nonce, iv) {
 }
 
 /**
- * @param {Buffer | Array} buffer 
- * @param {number} offset 
+ * @param {Buffer | Array} buffer
+ * @param {number} offset
  * @returns {Uint8Array}
  */
 CryptoKey.prototype.encrypt = function (buffer, offset) {
@@ -37,8 +37,8 @@ CryptoKey.prototype.encrypt = function (buffer, offset) {
 }
 
 /**
- * @param {Buffer | Array} data 
- * @param {number} offset 
+ * @param {Buffer | Array} data
+ * @param {number} offset
  * @returns {Uint8Array}
  */
 CryptoKey.prototype.decrypt = function (data, offset) {
