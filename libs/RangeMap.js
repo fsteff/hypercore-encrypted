@@ -63,8 +63,13 @@ RangeMap.prototype.insert = function (key, value) {
   }
 }
 
-RangeMap.prototype.get = function (value) {
-  var found = this._list.find((elem) => elem.compareTo(value) === 0)
+/**
+ * Returns the value to a key or null if not found
+ * @param {*} value
+ * @returns {RangeMap.MapElement | null}
+ */
+RangeMap.prototype.get = function (key) {
+  var found = this._list.find((elem) => elem.compareTo(key) === 0)
   if (typeof found !== 'undefined') {
     return found
   } else {
@@ -72,6 +77,16 @@ RangeMap.prototype.get = function (value) {
   }
 }
 
+/**
+ * Searches the next lower element in the list
+ * eg.:
+ * keys: [1,5,7]
+ * a search for '3' returns the first element
+ *
+ * Returns a RangeMap.MapElement or null on error / if the list is empty
+ * @param {*} value
+ * @returns {RangeMap.MapElement | null}
+ */
 RangeMap.prototype.getNextLower = function (value) {
   if (this._list.length === 0) return null
 
@@ -82,9 +97,8 @@ RangeMap.prototype.getNextLower = function (value) {
   if (zerodiff === 0) return this._list[0]
 
   // also often the case: last element
-  zerodiff = this._list[this._list.length-1].compareTo(value)
-  if(zerodiff <= 0) return this._list[this._list.length-1]
-
+  zerodiff = this._list[this._list.length - 1].compareTo(value)
+  if (zerodiff <= 0) return this._list[this._list.length - 1]
 
   var left = 0
   var right = this._list.length - 1
@@ -109,6 +123,9 @@ RangeMap.prototype.getNextLower = function (value) {
   return this._list[left]
 }
 
+/**
+ * @returns {[{key, value},...]}
+ */
 RangeMap.prototype.serialize = function () {
   var list = new Array(this._list.length)
   for (var i = 0; i < this._list.length; i++) {
@@ -117,6 +134,11 @@ RangeMap.prototype.serialize = function () {
   return list
 }
 
+/**
+ * Default entry element, derive if a key type other than number or string is needed
+ * @param {number | string} key
+ * @param {*} value
+ */
 RangeMap.MapElement = function (key, value) {
   if (!(this instanceof RangeMap.MapElement)) return new RangeMap.MapElement(key, value)
 
@@ -132,6 +154,14 @@ RangeMap.MapElement = function (key, value) {
   this.key = key
 }
 
+/**
+ * Compare to other element
+ * @param {RangeMap.MapElement | number | string} other
+ * @returns {number}
+ * < 0 if other is larger
+ * 0 if equal
+ * > 0 if other is smaller
+ */
 RangeMap.MapElement.prototype.compareTo = function (other) {
   if (other instanceof RangeMap.MapElement ||
     (typeof other === 'object' && typeof other.key === 'number')) {
@@ -149,6 +179,9 @@ RangeMap.MapElement.prototype.compareTo = function (other) {
   }
 }
 
+/**
+ * @returns {{key, value}}
+ */
 RangeMap.MapElement.prototype.serialize = function () {
   // if type not known create a deep copy
   var val = (typeof this.value.serialize === 'function') ? this.value.serialize() : JSON.parse(JSON.stringify(this.value))

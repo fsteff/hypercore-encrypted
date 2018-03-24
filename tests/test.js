@@ -24,11 +24,12 @@ fs.readFile(keyfile, 'utf-8', (err, data) => {
       })
     })
   })
-  
+
   core.append('test ' + core.cryptoKeyBook.entries.length, () => {
     for (var i = 0; i < core.length; i++) {
       const n = i
       core.get(n, (err, data) => {
+        if(err) throw err
         console.log(n + ': ' + data)
       })
     }

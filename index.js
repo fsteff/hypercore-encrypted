@@ -7,6 +7,20 @@ const CryptoBook = require('./libs/CryptoBook')
 
 module.exports = Feed
 
+/**
+ * Extension of Hypercore that supports encrpytion
+ * Usage is equal to hypercore, see https://github.com/mafintosh/hypercore for details
+ *
+ * If opts.encryptionKeyBook is set read and write access uses the encryption feature
+ *
+ * Use newEncryptionKey() to generate a new key that will be used for the next append() call
+ *
+ * To save the CryptoBook call serializeCryptoKeyBook(), which returns a plain JS object
+ *
+ * @param {string | function} createStorage storage path or an instance of a random-access-storage variant
+ * @param {string} key (optional)
+ * @param {object} opts (optional)
+ */
 function Feed (createStorage, key, opts) {
   if (!(this instanceof Feed)) return new Feed(createStorage, key, opts)
 
@@ -36,6 +50,11 @@ function Feed (createStorage, key, opts) {
 inherits(Feed, hypercore)
 
 const oldAppend = Feed.prototype.append
+/**
+ * Append to feed - in encryption mode it encrypts the data
+ * @param {string | Array} batch
+ * @param {function(err)} cb
+ */
 Feed.prototype.append = function (batch, cb) {
   if (typeof cb !== 'function') cb = throwErr
   if (!Array.isArray(batch)) batch = [batch]
@@ -52,6 +71,9 @@ Feed.prototype.append = function (batch, cb) {
   })
 }
 
+/**
+ * Creates a writeable stream
+ */
 Feed.prototype.createWriteStream = function () {
   var self = this
   if (this.cryptoKeyBook) {
@@ -68,6 +90,13 @@ Feed.prototype.createWriteStream = function () {
 }
 
 const oldGet = Feed.prototype.get
+/**
+ * Get entry of index [index]
+ * (can also be called without opts, then the 2nd parameter is the callback)
+ * @param {number} index
+ * @param {*} opts (optional)
+ * @param {function(error, data)} cb
+ */
 Feed.prototype.get = function (index, opts, cb) {
   if (typeof opts === 'function') return this.get(index, null, opts)
   if (!this.opened) return this._readyAndGet(index, opts, cb)
@@ -76,7 +105,7 @@ Feed.prototype.get = function (index, opts, cb) {
   const self = this
   if (this.cryptoKeyBook) {
     this._ready((err) => {
-      if(err) return cb(err)
+      if (err) return cb(err)
 
       oldGet.call(this, index, opts, (err, data) => {
         if (err) return cb(err)
@@ -94,6 +123,10 @@ Feed.prototype.get = function (index, opts, cb) {
   }
 }
 
+/**
+ * Decodes the data to binary
+ * @param {string | object | buffer | Array} data 
+ */
 Feed.prototype._toBinary = function (data) {
   var arr = []
   if (!Array.isArray(data)) data = [data]
@@ -114,6 +147,10 @@ Feed.prototype._toBinary = function (data) {
   return arr
 }
 
+/**
+ * Encodes the data back to the specified encoding
+ * @param {Buffer} data 
+ */
 Feed.prototype._fromBinary = function (data) {
   switch (this.encoding) {
     case 'utf-8': return Buffer.from(data).toString('utf-8')
@@ -123,10 +160,21 @@ Feed.prototype._fromBinary = function (data) {
   }
 }
 const noarr = []
+/**
+ * Calculats the feed offset of a node index and calls the callback when done
+ * (may need to load metadata first)
+ * @param {number} index 
+ * @param {function(err, offset, size)} cb 
+ */
 Feed.prototype._calcOffset = function (index, cb) {
   this._storage.dataOffset(index, noarr, cb)
 }
 
+/**
+ * @param {*} arr 
+ * @param {number} offset
+ * @returns {Uint8Array} 
+ */
 Feed.prototype._encrypt = function (arr, offset) {
   if (!Array.isArray(arr)) arr = [arr]
 
@@ -144,6 +192,10 @@ Feed.prototype._encrypt = function (arr, offset) {
   return ret
 }
 
+/**
+ * Adds a new encryption key that is used for the next write to the feed
+ * @param {function(err)} cb (optional) called when done
+ */
 Feed.prototype.newEncryptionKey = function (cb) {
   const self = this
   if (typeof cb !== 'function') cb = throwErr
@@ -155,7 +207,11 @@ Feed.prototype.newEncryptionKey = function (cb) {
     cb(null)
   })
 }
-
+/**
+ * Serializes the CryptoBook to a JS object of the following form:
+ * [{key: number, value: {nonce: string, iv: number}}, ...]
+ * @param {function(err, data)} cb
+ */
 Feed.prototype.serializeCryptoKeyBook = function (cb) {
   const self = this
   if (typeof cb !== 'function') cb = throwErr
@@ -167,6 +223,7 @@ Feed.prototype.serializeCryptoKeyBook = function (cb) {
   })
 }
 
+// default callback
 function throwErr (err) {
   if (err) throw err
 }
