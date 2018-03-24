@@ -73,15 +73,22 @@ RangeMap.prototype.get = function (value) {
 }
 
 RangeMap.prototype.getNextLower = function (value) {
-  var left = 0
-  var right = this._list.length - 1
-  var mid = Math.floor((right - left) / 2)
-
   if (this._list.length === 0) return null
+
   var zerodiff = this._list[0].compareTo(value)
+  // first element is larger -> no element that is <= value
   if (zerodiff > 0) return null
   // often this is the case, so check this before starting the binary search
   if (zerodiff === 0) return this._list[0]
+
+  // also often the case: last element
+  zerodiff = this._list[this._list.length-1].compareTo(value)
+  if(zerodiff <= 0) return this._list[this._list.length-1]
+
+
+  var left = 0
+  var right = this._list.length - 1
+  var mid = Math.floor((right - left) / 2)
 
   // binary search
   while (right - left > 1) {
