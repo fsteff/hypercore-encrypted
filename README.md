@@ -5,7 +5,7 @@ Wrapper around [hypercore](https://github.com/mafintosh/hypercore) that supports
 <br><br>
 hypercore-encrypted is derived from hypercore and if a list of keys is provided it encrypts all data appended to the feed and decrypts on read access.
 For encryption AES in CTR mode is used. For the IV (counter) the position/offset is used.<br>
-It supports multiple keys to enable sharing an feed up to a certain version, while newer entries remain encrypted.
+It supports multiple keys to enable sharing an feed up to a certain version, while newer entries remain encrypted.<br>
 *A version of hyperdb and hyperdrive using hypercore-encrypted is planned*
 
 ## What is it for?
