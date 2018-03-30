@@ -48,6 +48,7 @@ function Feed (createStorage, key, opts) {
 }
 
 inherits(Feed, hypercore)
+Feed.discoveryKey = hypercore.discoveryKey
 
 const oldAppend = Feed.prototype.append
 /**
