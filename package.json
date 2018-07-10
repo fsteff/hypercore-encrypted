@@ -4,7 +4,7 @@
   "description": "wrapper around hypercore that supports encryption (experimental!)",
   "main": "index.js",
   "scripts": {
-    "test": "node ./tests/test.js"
+    "test": "standard --fix && tape ./tests/*.js"
   },
   "repository": {
     "type": "git",
@@ -34,7 +34,7 @@
   "devDependencies": {
     "hyperdb": "^3.0.0-1",
     "hyperdrive": "^9.12.3",
-    "random-access-memory": "^2.4.0",
+    "random-access-memory": "^3.0.0",
     "standard": "^11.0.1",
     "tape": "^4.9.0"
   },

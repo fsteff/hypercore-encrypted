@@ -53,7 +53,7 @@ RangeMap.prototype.insert = function (key, value) {
   }
 
   if (this._list[i].compareTo(element) === 0) {
-    throw new Error('element with same key already stored in RangeMap')
+    throw new Error('element with same key (key/index=' + key + ') already stored in RangeMap')
   }
 
   if (i === this._list.length - 1) {

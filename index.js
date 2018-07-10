@@ -4,11 +4,14 @@ const bulk = require('bulk-write-stream')
 const Buffer = require('buffer').Buffer
 
 const CryptoBook = require('./libs/CryptoBook')
+const CryptoLib = require('./libs/CryptoLib')
 
 module.exports = Feed
+Feed.CryptoBook = CryptoBook
+Feed.CryptoLib = CryptoLib
 
 /**
- * Extension of Hypercore that supports encrpytion
+ * Extension of hypercore that supports encrpytion
  * Usage is equal to hypercore, see https://github.com/mafintosh/hypercore for details
  *
  * If opts.encryptionKeyBook is set read and write access uses the encryption feature
@@ -24,20 +27,19 @@ module.exports = Feed
 function Feed (createStorage, key, opts) {
   if (!(this instanceof Feed)) return new Feed(createStorage, key, opts)
 
+  if (!opts) opts = {}
+
+  // note: internal encoding (of the unerlying hypercore) is always binary
   this.encoding = opts.valueEncoding || 'binary'
+  // copy to avoid problems with internal changes
+  opts = Object.assign({}, opts)
 
-  if (typeof opts.encryptionKeyBook === 'string') {
-    // if string try to deserialize (throws an error if it fails!)
-    opts.encryptionKeyBook = new CryptoBook(opts.encryptionKeyBook)
+  const self = this
+  if (Buffer.isBuffer(key)) {
+    key = key.toString('hex')
   }
 
-  if (opts.encryptionKeyBook instanceof CryptoBook) {
-    this.cryptoKeyBook = opts.encryptionKeyBook
-    // encrypted data is always binary
-    opts.valueEncoding = 'binary'
-  } else {
-    this.cryptoKeyBook = null
-  }
+  let registerBook = findCryptoBook()
 
   hypercore.call(this, createStorage, key, opts)
 
@@ -45,6 +47,44 @@ function Feed (createStorage, key, opts) {
   this.on('append', () => {
     this._byteLengthOffset = 0
   })
+
+  if (registerBook) {
+    this.on('ready', () => {
+      CryptoLib.getInstance().addBook(self.key.toString('hex'), self.cryptoKeyBook)
+    })
+  }
+
+  function findCryptoBook () {
+    let registerBook = false
+    if (typeof opts.encryptionKeyBook === 'undefined' && typeof key === 'string') {
+      self.cryptoKeyBook = CryptoLib.getInstance().getBook(key)
+      opts.valueEncoding = 'binary'
+      return false
+    } else if (typeof opts.encryptionKeyBook === 'string') {
+      // if string try to deserialize (throws an error if it fails!)
+      opts.encryptionKeyBook = new CryptoBook(opts.encryptionKeyBook)
+      opts.valueEncoding = 'binary'
+      registerBook = true
+    }
+
+    if (opts.encryptionKeyBook instanceof CryptoBook) {
+      self.cryptoKeyBook = opts.encryptionKeyBook
+      registerBook = true
+      // encrypted data is always binary
+      opts.valueEncoding = 'binary'
+    } else {
+      // if opts.noEncryption is specified or a key (-> old archive) is specified set it to null
+      if (opts.noEncryption || key) {
+        self.cryptoKeyBook = null
+      } else {
+        // per default create a new cryptobook
+        self.cryptoKeyBook = new CryptoBook()
+        self.cryptoKeyBook.generateNewKey(0)
+        registerBook = true
+      }
+    }
+    return registerBook
+  }
 }
 
 inherits(Feed, hypercore)
