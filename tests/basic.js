@@ -100,7 +100,7 @@ tape('CryptoLib & replicate', t => {
     const clone = hypercore(ram, key, {valueEncoding: 'utf-8'})
     clone.on('ready', () => {
       replicate(core, clone, {live: true, download: true})
-      
+
       clone.get(0, (err, data) => {
         t.error(err)
         t.same(clone.length, 3)
