@@ -42,14 +42,18 @@ class CryptoLib {
     }
   }
 
-  getBook (id) {
+  getBook (id, suppressNotFound) {
     let book = this._books[id]
-    if (!book) {
+    if (!book && !suppressNotFound) {
       this._callOnBookNotFound(id)
       // try again
       book = this._books[id]
     }
     return book
+  }
+
+  getAllBooks () {
+    return this._books
   }
 
   registerOnBookNotFound (handler) {
