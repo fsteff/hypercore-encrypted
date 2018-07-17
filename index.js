@@ -56,9 +56,9 @@ function Feed (createStorage, key, opts) {
 
   function findCryptoBook () {
     let registerBook = false
-    if (typeof opts.encryptionKeyBook === 'undefined' && typeof key === 'string') {
+    if (typeof opts.encryptionKeyBook === 'undefined' && typeof key === 'string' && ! opts.noEncryption) {
       self.cryptoKeyBook = CryptoLib.getInstance().getBook(key)
-      opts.valueEncoding = 'binary'
+      if(self.cryptoKeyBook) opts.valueEncoding = 'binary'    
       return false
     } else if (typeof opts.encryptionKeyBook === 'string') {
       // if string try to deserialize (throws an error if it fails!)
@@ -162,9 +162,9 @@ Feed.prototype.get = function (index, opts, cb) {
     self._calcOffset(index, (err, offs) => {
       if (err) return cb(err)
 
-      data = self.cryptoKeyBook.decrypt(data, offs)
-      data = self._fromBinary(data)
-      cb(null, data, true)
+      var decrypted = self.cryptoKeyBook.decrypt(data, offs)
+      var decoded = self._fromBinary(decrypted)
+      cb(null, decoded, true)
     })
   }
 }
@@ -245,6 +245,7 @@ Feed.prototype._encrypt = function (arr, offset) {
 Feed.prototype.newEncryptionKey = function (cb) {
   const self = this
   if (typeof cb !== 'function') cb = throwErr
+  if(! this.cryptoKeyBook) throw new Error('not in encryption mode')
 
   this._ready((err) => {
     if (err) cb(err)

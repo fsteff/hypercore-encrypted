@@ -99,32 +99,29 @@ tape('CryptoLib & replicate', t => {
     const key = core.key
     const clone = hypercore(ram, key, {valueEncoding: 'utf-8'})
     clone.on('ready', () => {
-      replicate(core, clone, {live: true, sparse: false})
-      clone.createReadStream().on('data', (data) => {
-        console.log(data)
+      replicate(core, clone, {live: true, download: true})
+      
+      clone.get(0, (err, data) => {
+        t.error(err)
+        t.same(clone.length, 3)
+        t.same(data, 'hello')
       })
-    })
 
-    clone.get(0, (err, data) => {
-      t.error(err)
-      t.same(clone.length, 3)
-      t.same(data, 'hello')
-    })
+      clone.get(1, (err, data) => {
+        t.error(err)
+        t.same(data, ' ')
+      })
 
-    clone.get(1, (err, data) => {
-      t.error(err)
-      t.same(data, ' ')
-    })
-
-    clone.get(2, (err, data) => {
-      t.error(err)
-      t.same(data, 'world')
+      clone.get(2, (err, data) => {
+        t.error(err)
+        t.same(data, 'world')
+      })
     })
   }
 })
 
 tape('noEncryption', t => {
-  t.plan(7)
+  t.plan(8)
   const core = hypercore(ram, null, {
     noEncryption: true,
     valueEncoding: 'utf-8'
@@ -135,7 +132,7 @@ tape('noEncryption', t => {
   })
 
   function read () {
-    t.same(core.cryptoBook, null)
+    t.ok(!core.cryptoBook)
     t.same(core.length, 3)
     core.get(0, (err, data) => {
       t.error(err)
