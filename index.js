@@ -56,7 +56,7 @@ function Feed (createStorage, key, opts) {
 
   function findCryptoBook () {
     let registerBook = false
-    if (typeof opts.encryptionKeyBook === 'undefined' && typeof key === 'string' && !opts.noEncryption) {
+    if (typeof opts.encryptionKeyBook === 'undefined' && (typeof key === 'string' && !opts.secretKey) && !opts.noEncryption) {
       self.cryptoKeyBook = CryptoLib.getInstance().getBook(key)
       if (self.cryptoKeyBook) opts.valueEncoding = 'binary'
       return false
@@ -74,7 +74,7 @@ function Feed (createStorage, key, opts) {
       opts.valueEncoding = 'binary'
     } else {
       // if opts.noEncryption is specified or a key (-> old archive) is specified set it to null
-      if (opts.noEncryption || key) {
+      if (opts.noEncryption || (key && !opts.secretKey)) {
         self.cryptoKeyBook = null
       } else {
         // per default create a new cryptobook

@@ -3,6 +3,7 @@ const CryptoLib = require('../libs/CryptoLib')
 const CryptoBook = require('../libs/CryptoBook')
 const tape = require('tape')
 const ram = require('random-access-memory')
+const crypto = require('hypercore-crypto')
 
 function replicate (a, b, opts) {
   var stream = a.replicate(opts)
@@ -149,4 +150,17 @@ tape('noEncryption', t => {
       t.same(data, 'world')
     })
   }
+})
+
+tape('external keypair', t => {
+  t.plan(1)
+  const keypair = crypto.keyPair()
+  const core = hypercore(ram, keypair.publicKey, {
+    valueEncoding: 'utf-8',
+    secretKey: keypair.secretKey
+  })
+  core.ready(err => {
+    if (err) t.error(err)
+    t.ok(cryptoLib.getBook(keypair.publicKey.toString('hex')))
+  })
 })
