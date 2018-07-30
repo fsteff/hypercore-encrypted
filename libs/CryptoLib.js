@@ -57,7 +57,7 @@ class CryptoLib {
   }
 
   registerOnBookNotFound (handler) {
-    if (!(typeof handler !== 'function')) {
+    if (typeof handler !== 'function') {
       console.error('OnBookNotFound handler is not a function')
       return
     }
