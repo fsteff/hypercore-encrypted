@@ -15,17 +15,18 @@ npm i hypercore-encrypted
 
 ``` js
 const ram = require('random-access-memory')
-const CryptoBook = require('./libs/CryptoBook.js') // relative to index.js
+const CryptoLib = require('../libs/CryptoLib')
+const cryptoLib = CryptoLib.getInstance() // handles all encryption keys
 
 // if you do not want to use encryption, add the option noEncryption: true
-var feed = hypercore(() => { return ram() }, null, {
-    encryptionKeyBook: new CryptoBook()
-})
+var feed = hypercore(ram(), null)
 
 // to add a new encryption key (one is created by default)
 core.newEncryptionKey()
 
 // then use it as if it was a normal hypercore...
+
+// TODO: more API spec
 ```
 
 ## What is it for?
