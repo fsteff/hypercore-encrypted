@@ -1,6 +1,6 @@
 {
   "name": "hypercore-encrypted",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "wrapper around hypercore that supports encryption (experimental!)",
   "main": "index.js",
   "scripts": {
@@ -23,19 +23,19 @@
   },
   "homepage": "https://github.com/fsteff/hypercore-encrypted#readme",
   "dependencies": {
-    "aes-js": "^3.1.1",
-    "buffer": "^5.1.0",
+    "aes-js": "^3.1.2",
+    "buffer": "^5.2.1",
     "bulk-write-stream": "^1.1.4",
-    "hypercore": "^6.18.0",
+    "hypercore": "^6.22.1",
     "hypercore-crypto": "^1.0.0",
     "inherits": "^2.0.3",
     "randombytes": "^2.0.6",
     "stream": "0.0.2"
   },
   "devDependencies": {
-    "hyperdb": "^3.3.0",
+    "hyperdb": "^3.5.0",
     "hyperdrive": "^9.14.0",
-    "random-access-memory": "^3.0.0",
+    "random-access-memory": "^3.1.1",
     "standard": "^11.0.1",
     "tape": "^4.9.1"
   },
