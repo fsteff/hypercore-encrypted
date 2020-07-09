@@ -3,43 +3,31 @@ const inherits = require('inherits')
 const bulk = require('bulk-write-stream')
 const Buffer = require('buffer').Buffer
 
-const CryptoBook = require('./libs/CryptoBook')
-const CryptoLib = require('./libs/CryptoLib')
-
 module.exports = Feed
-Feed.CryptoBook = CryptoBook
-Feed.CryptoLib = CryptoLib
 
 /**
  * Extension of hypercore that supports encrpytion
  * Usage is equal to hypercore, see https://github.com/mafintosh/hypercore for details
  *
- * If opts.encryptionKeyBook is set read and write access uses the encryption feature
- *
- * Use newEncryptionKey() to generate a new key that will be used for the next append() call
- *
- * To save the CryptoBook call serializeCryptoKeyBook(), which returns a plain JS object
- *
- * @param {string | function} createStorage storage path or an instance of a random-access-storage variant
- * @param {string} key (optional)
- * @param {object} opts (optional)
+ * @param {string | function} createStorage storage path or an instance of a random-access-storage letiant
+ * @param {string} key (optional) hypercore public key - use to replicate existing hypercore
+ * @param {object} opts at least {encrypt: (buf, offs, cb) => void, decrypt: (buf, offs, cb) => void} has to be specified
  */
 function Feed (createStorage, key, opts) {
   if (!(this instanceof Feed)) return new Feed(createStorage, key, opts)
 
-  if (!opts) opts = {}
+  if (!opts) throw new Error('parameter opts has to be specified - at least opts.encrypt and opts.decrypt have to be set')
+  if (!opts.encrypt || !opts.decrypt || typeof opts.encrypt !== 'function' || typeof opts.decrypt !== 'function') throw new Error('Encryption handlers opts.encrypt and opts.decrypt have to be specified')
 
   // note: internal encoding (of the unerlying hypercore) is always binary
   this.encoding = opts.valueEncoding || 'binary'
+  this.encrypt = opts.encrypt
+  this.decrypt = opts.decrypt
   // copy to avoid problems with internal changes
   opts = Object.assign({}, opts)
-
-  const self = this
   if (Buffer.isBuffer(key)) {
     key = key.toString('hex')
   }
-
-  let registerBook = findCryptoBook()
 
   hypercore.call(this, createStorage, key, opts)
 
@@ -47,45 +35,6 @@ function Feed (createStorage, key, opts) {
   this.on('append', () => {
     this._byteLengthOffset = 0
   })
-
-  if (registerBook) {
-    this.on('ready', () => {
-      CryptoLib.getInstance().addBook(self.key.toString('hex'), self.cryptoKeyBook)
-    })
-  }
-
-  function findCryptoBook () {
-    let registerBook = false
-    if (typeof opts.encryptionKeyBook === 'undefined' && (typeof key === 'string' && !opts.secretKey) && !opts.noEncryption) {
-      self.cryptoKeyBook = CryptoLib.getInstance().getBook(key)
-      if (self.cryptoKeyBook) opts.valueEncoding = 'binary'
-      return false
-    } else if (typeof opts.encryptionKeyBook === 'string') {
-      // if string try to deserialize (throws an error if it fails!)
-      opts.encryptionKeyBook = new CryptoBook(opts.encryptionKeyBook)
-      opts.valueEncoding = 'binary'
-      registerBook = true
-    }
-
-    if (opts.encryptionKeyBook instanceof CryptoBook) {
-      self.cryptoKeyBook = opts.encryptionKeyBook
-      registerBook = true
-      // encrypted data is always binary
-      opts.valueEncoding = 'binary'
-    } else {
-      // if opts.noEncryption is specified or a key (-> old archive) is specified set it to null
-      if (opts.noEncryption || (key && !opts.secretKey)) {
-        self.cryptoKeyBook = null
-      } else {
-        // per default create a new cryptobook
-        self.cryptoKeyBook = new CryptoBook()
-        self.cryptoKeyBook.generateNewKey(0)
-        opts.valueEncoding = 'binary'
-        registerBook = true
-      }
-    }
-    return registerBook
-  }
 }
 
 inherits(Feed, hypercore)
@@ -101,31 +50,18 @@ Feed.prototype.append = function (batch, cb) {
   if (typeof cb !== 'function') cb = throwErr
   if (!Array.isArray(batch)) batch = [batch]
   const self = this
-  this._ready((err) => {
-    if (err) return cb(err)
-
-    if (self.cryptoKeyBook) {
-      batch = self._toBinary(batch)
-      batch = self._encrypt(batch, self.byteLength + self._byteLengthOffset)
-    }
-
-    oldAppend.call(self, batch, cb)
-  })
+  const binaryBatch = self._toBinary(batch)
+  const offset = self.byteLength + self._byteLengthOffset
+  self._encrypt(binaryBatch, offset, ciphertext => oldAppend.call(self, ciphertext, cb))
 }
 
 /**
  * Creates a writeable stream
  */
 Feed.prototype.createWriteStream = function () {
-  var self = this
-  if (this.cryptoKeyBook) {
-    return bulk.obj(writeEncr)
-  } else {
-    return bulk.obj(write)
-  }
-  function write (batch, cb) {
-    self._batch(batch, cb)
-  }
+  const self = this
+  return bulk.obj(writeEncr)
+
   function writeEncr (batch, cb) {
     self.append(batch, cb)
   }
@@ -139,20 +75,15 @@ const oldGet = Feed.prototype.get
  * @param {*} opts (optional)
  * @param {function(error, data)} cb
  */
-Feed.prototype.get = function (index, opts, cb) {
+Feed.prototype.get = function (index, opts, callback) {
   const self = this
-
+  if (!opts) opts = {}
   if (typeof opts === 'function') return self.get(index, null, opts)
-  if (!self.opened) return this._readyAndGet(index, opts, cb)
-  if (typeof cb !== 'function') cb = throwErr
+  
+  if (!self.opened) return this._readyAndGet(index, opts, callback)
+  if (typeof callback !== 'function') callback = throwErr
 
-  const callback = cb
-
-  if (self.cryptoKeyBook) {
-    oldGet.call(self, index, opts, onData)
-  } else {
-    oldGet.call(self, index, opts, cb)
-  }
+  oldGet.call(self, index, opts, onData)
 
   function onData (err, data, isCascaded) {
     if (err) return callback(err)
@@ -161,11 +92,12 @@ Feed.prototype.get = function (index, opts, cb) {
     if (isCascaded) return callback(err, data, isCascaded)
 
     self._calcOffset(index, (err, offs) => {
-      if (err) return cb(err)
+      if (err) return callback(err)
 
-      var decrypted = self.cryptoKeyBook.decrypt(data, offs)
-      var decoded = self._fromBinary(decrypted)
-      cb(null, decoded, true)
+      self.decrypt(Buffer.from(data), offs, plain => {
+        const decoded = self._fromBinary(plain)
+        callback(null, decoded, true)
+      })
     })
   }
 }
@@ -175,10 +107,10 @@ Feed.prototype.get = function (index, opts, cb) {
  * @param {string | object | buffer | Array} data
  */
 Feed.prototype._toBinary = function (data) {
-  var arr = []
+  const arr = []
   if (!Array.isArray(data)) data = [data]
 
-  for (var i = 0; i < data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
     switch (this.encoding) {
       case 'utf-8':
         arr[i] = Buffer.from(data[i])
@@ -219,56 +151,27 @@ Feed.prototype._calcOffset = function (index, cb) {
 
 /**
  * @param {*} arr
- * @param {number} offset
+ * @param {number} offset byte offset
  * @returns {Buffer}
  */
-Feed.prototype._encrypt = function (arr, offset) {
+Feed.prototype._encrypt = function (arr, offset, callback) {
+  const self = this
   if (!Array.isArray(arr)) arr = [arr]
 
-  if (this.cryptoKeyBook.entries.length === 0) {
-    throw new Error('CryptoBook is empty')
-  }
-
-  var ret = new Array(arr.length)
-  for (var i = 0; i < arr.length; i++) {
-    ret[i] = Buffer.from(this.cryptoKeyBook.encrypt(arr[i], offset))
+  const ret = new Array(arr.length)
+  let i = 0
+  this.encrypt(arr[i], offset, onCiphertext)
+  function onCiphertext (data) {
+    ret[i] = data
     offset += arr[i].length
+    i++
+    if (i < arr.length) {
+      self.encrypt(arr[i], offset, onCiphertext)
+    } else {
+      self._byteLengthOffset += offset
+      callback(ret)
+    }
   }
-  this._byteLengthOffset += offset
-
-  return ret
-}
-
-/**
- * Adds a new encryption key that is used for the next write to the feed
- * @param {function(err)} cb (optional) called when done
- */
-Feed.prototype.newEncryptionKey = function (cb) {
-  const self = this
-  if (typeof cb !== 'function') cb = throwErr
-  if (!this.cryptoKeyBook) throw new Error('not in encryption mode')
-
-  this._ready((err) => {
-    if (err) cb(err)
-
-    self.cryptoKeyBook.generateNewKey(self.byteLength + self._byteLengthOffset)
-    cb(null)
-  })
-}
-/**
- * Serializes the CryptoBook to a JS object of the following form:
- * [{key: number, value: {nonce: string, iv: number}}, ...]
- * @param {function(err, data)} cb
- */
-Feed.prototype.serializeCryptoKeyBook = function (cb) {
-  const self = this
-  if (typeof cb !== 'function') cb = throwErr
-
-  this._ready((err) => {
-    if (err) cb(err)
-
-    cb(null, self.cryptoKeyBook.serialize())
-  })
 }
 
 // default callback

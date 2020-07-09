@@ -1,39 +1,39 @@
 # hypercore-encrypted
-Wrapper around [hypercore](https://github.com/mafintosh/hypercore) that supports encryption
-<br>
-**Warning: this is experimental, there certainly are bugs and everything is subject to change!**
-<br><br>
-hypercore-encrypted is derived from hypercore and if a list of keys is provided it encrypts all data appended to the feed and decrypts on read access.
-For encryption AES in CTR mode is used. For the IV (counter) the position/offset is used.<br>
-It supports multiple keys to enable sharing an feed up to a certain version, while newer entries remain encrypted.<br>
+
+Wrapper around [hypercore](https://github.com/mafintosh/hypercore) that simplifies encryption
+
+**Warning: this is not yet stable, there certainly are bugs and everything is subject to change!**
+
+As of version 0.1 the encryption functionality has to be passed to the constructor (as part of the options)!
+The library is intended to be used with AES-CTR, but can as well be used with most other ciphers.
+
+The encryption and decryption functions are passed the following parameters:
+
+* data: Uint8Array - the plaintext/ciphertext to be processed
+* offs: number - byte position in the append-only log
+* callback: (result: Uint8Array) => void - callback function that MUST be called with the result
 
 ## Usage
+
 Install it using npm:
-```
+
+``` cli
 npm i hypercore-encrypted
 ```
 
 ``` js
 const ram = require('random-access-memory')
-const CryptoLib = require('../libs/CryptoLib')
-const cryptoLib = CryptoLib.getInstance() // handles all encryption keys
 
-// if you do not want to use encryption, add the option noEncryption: true
-var feed = hypercore(ram(), null)
-
-// to add a new encryption key (one is created by default)
-core.newEncryptionKey()
+var feed = hypercore(ram(), null, {
+  encrypt: (data, offs, cb) => {let result = encryptSomehow(...); cb(result)},
+  decrypt: (data, offs, cb) => {let result = decryptSomehow(...); cb(result)}
+})
 
 // then use it as if it was a normal hypercore...
-
-// TODO: more API spec
 ```
 
-## What is it for?
-I am currently writing a proposal for a bigger project called [DatFS](https://github.com/fsteff/DatFS), 
-which would heaviliy depend on the encrpytion.<br>
-Also, I believe many p2p apps could use encrypted dats. I would really like to see this or a similar feature being integrated into the official dat codebase.
+## TODO
 
-
-<br><br>
-Any feedback is welcome! I still have much to learn, so don't hesitate to tell me what you think about my work.
+* [ ] write lock during the encryption to make sure the byte offset is correct (until then async use is dangerous)
+* [ ] default encryption/decryption functions
+* [ ] more tests
