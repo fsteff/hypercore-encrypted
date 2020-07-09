@@ -79,7 +79,7 @@ Feed.prototype.get = function (index, opts, callback) {
   const self = this
   if (!opts) opts = {}
   if (typeof opts === 'function') return self.get(index, null, opts)
-  
+
   if (!self.opened) return this._readyAndGet(index, opts, callback)
   if (typeof callback !== 'function') callback = throwErr
 

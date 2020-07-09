@@ -1,7 +1,6 @@
 const hypercore = require('../index')
 const tape = require('tape')
 const ram = require('random-access-memory')
-const crypto = require('hypercore-crypto')
 
 function replicate (a, b, opts) {
   var stream = a.replicate(true, opts)
