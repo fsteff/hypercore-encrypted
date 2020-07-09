@@ -21,6 +21,8 @@ Install it using npm:
 npm i hypercore-encrypted
 ```
 
+Example:
+
 ``` js
 const ram = require('random-access-memory')
 
@@ -34,6 +36,6 @@ var feed = hypercore(ram(), null, {
 
 ## TODO
 
-* [ ] write lock during the encryption to make sure the byte offset is correct (until then async use is dangerous)
+* [ ] write lock during the encryption to make sure the byte offset is correct (until then **async use is dangerous**)
 * [ ] default encryption/decryption functions
 * [ ] more tests
