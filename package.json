@@ -1,6 +1,6 @@
 {
   "name": "hypercore-encrypted",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "wrapper around hypercore that supports encryption (experimental!)",
   "main": "index.js",
   "scripts": {
